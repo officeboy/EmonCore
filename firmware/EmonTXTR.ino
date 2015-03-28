@@ -13,11 +13,11 @@ int tinkerAnalogWrite(String command);
 /**
 * Declaring the variables.
 */
-unsigned int nextTime = 0;    // Next time to contact the server
-int node_id = 0;
-// On-board emonTx LED
-const int LEDpin = D7;
-#define APIKEY "XXXX"
+unsigned int nextTime =     0;          // Next time to contact the server
+int node_id =               0;
+const float Vcal=           130.0;      //Calibration for US AC-AC adapter
+const int LEDpin =          D7;         // On-board spark core LED
+#define APIKEY "<Your Key Here>"
 
 HttpClient http;
 http_request_t request;
@@ -36,27 +36,29 @@ http_header_t headers[] = {
 
 
 void setup() {
+    // Setup indicator LED
+    pinMode(LEDpin, OUTPUT);                                              
+    digitalWrite(LEDpin, HIGH);  
+
     Serial.begin(9600);
     // Request path and body can be set at runtime or at setup.
     request.hostname = "emoncms.org";
     request.port = 80;
     
-    
     // (ADC input, calibration, phase_shift)
-    ct1.voltage(A0, 234.26, 1.7);  // Voltage: input pin, calibration, phase_shift
+    ct1.voltage(A0, Vcal, 1.7);  // Voltage: input pin, calibration, phase_shift
     
-    // Calibration factor = CT ratio / burden resistance = (100A / 0.05A) / 33 Ohms = 60.606
-    ct1.current(A1, 111.1);       // Current: input pin, calibration.
+    // Calibration factor = CT ratio / burden resistance = (100A / 0.05A) / 33 Ohms = 60.606  // (2000 turns / 22 Ohm burden) = 90.9
+    ct1.current(A1, 90.9);       // Current: input pin, calibration.
     
-    // Setup indicator LED
-    pinMode(LEDpin, OUTPUT);                                              
-    digitalWrite(LEDpin, HIGH);  
-
 //Tinker Setup
     Spark.function("digitalread", tinkerDigitalRead);
     Spark.function("digitalwrite", tinkerDigitalWrite);
     Spark.function("analogread", tinkerAnalogRead);
     Spark.function("analogwrite", tinkerAnalogWrite);
+
+    delay(1000);
+    digitalWrite(LEDpin,LOW);
 
 }
 
@@ -72,11 +74,10 @@ void loop() {
     //Serial.println();
     //Serial.println("Application>\tStart of Loop.");
 
-    request.path = "/input/post.json?apikey="APIKEY"&json={power:"+String(ct1.Vrms)+",temperature:"+String(ct1.Irms)+"}";
+    request.path = "/input/post.json?apikey="APIKEY"&json={ct1Vrms:"+String(ct1.Vrms)+",ct1Irms:"+String(ct1.Irms)+",ct1realpower:"+String(ct1.realPower)+"}";
 
     // The library also supports sending a body with your request:
     //request.body = "{\"key\":\"value\"}";
-    
     
     // Get request
     http.get(request, response, headers);
@@ -87,6 +88,10 @@ void loop() {
 
     //Serial.print("Application>\tHTTP Response Body: ");
     //Serial.println(response.body);
+
+    digitalWrite(LEDpin,HIGH); 
+    delay(200);
+    digitalWrite(LEDpin,LOW); 
 
    nextTime = millis() + 180000;
 }
