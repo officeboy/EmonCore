@@ -17,7 +17,7 @@ unsigned int nextTime = 0;    // Next time to contact the server
 int node_id = 0;
 // On-board emonTx LED
 const int LEDpin = D7;
-#define APIKEY "b5ea4f694e9478fe6c8704a75cd4c2df"
+#define APIKEY "XXXX"
 
 HttpClient http;
 http_request_t request;
