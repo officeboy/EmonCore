@@ -1,6 +1,6 @@
-
 // This #include statement was automatically added by the Spark IDE.
-#include "EmonLib/EmonLib.h"             // Include Emon Library
+//#include "EmonLib/EmonLib.h"             // Include Emon Library
+#include "EmonLib.h"             // Include Emon Library
 #include "HttpClient/HttpClient.h"
 #include "application.h"
 
@@ -15,14 +15,27 @@ int tinkerAnalogWrite(String command);
 */
 unsigned int nextTime =     0;          // Next time to contact the server
 int node_id =               0;
-const float Vcal=           130.0;      //Calibration for US AC-AC adapter
+const float Vcal=           136.5;      //Calibration for my US AC-AC adapter (Nokia 3v charger)
 const int LEDpin =          D7;         // On-board spark core LED
 #define APIKEY "<Your Key Here>"
+
+//-----------------------RFM12B / RFM69CW SETTINGS----------------------------------------------------------------------------------------------------
+//#define RF_freq RF12_433MHZ                                     // Frequency of RF69CW module can be RF12_433MHZ, RF12_868MHZ or RF12_915MHZ. You should use the one matching the module you have.
+//byte nodeID = 10;                                               // emonTx RFM12B node ID
+//const int networkGroup = 210;  
+typedef struct { 
+int power1, power2, power3, power4, Vrms; //temp[MaxOnewire]; 
+int pulseCount; 
+} PayloadTX;     // create structure - a neat way of packaging data for RF comms
+  PayloadTX emontx; 
+//-------------------------------------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------------------------------------
 
 HttpClient http;
 http_request_t request;
 http_response_t response;
 EnergyMonitor ct1;             // Create an instance for each channel
+
 
 
 
@@ -41,6 +54,7 @@ void setup() {
     digitalWrite(LEDpin, HIGH);  
 
     Serial.begin(9600);
+    
     // Request path and body can be set at runtime or at setup.
     request.hostname = "emoncms.org";
     request.port = 80;
@@ -66,15 +80,18 @@ void loop() {
     if (nextTime > millis()) {
         return;
     }
+    emontx.Vrms = 0;                      //Set Vrms to zero, this will be overwirtten by CT 1+
+    
     
     ct1.calcVI(20,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
+    emontx.Vrms = ct1.Vrms*100;
     
     // Available properties: ct1.realPower, ct1.apparentPower, ct1.powerFactor, ct1.Irms and ct1.Vrms
 
-    //Serial.println();
-    //Serial.println("Application>\tStart of Loop.");
+    Serial.println();
+    Serial.println("Application>\tStart of Loop.");
 
-    request.path = "/input/post.json?apikey="APIKEY"&json={ct1Vrms:"+String(ct1.Vrms)+",ct1Irms:"+String(ct1.Irms)+",ct1realpower:"+String(ct1.realPower)+"}";
+    request.path = "/input/post.json?apikey="APIKEY"&json={ct1Vrms:"+String(emontx.Vrms)+",ct1Irms:"+String(ct1.Irms)+",NumSamp:"+String(ct1.samp)+",ct1realpower:"+String(ct1.realPower)+"}";
 
     // The library also supports sending a body with your request:
     //request.body = "{\"key\":\"value\"}";
@@ -93,7 +110,7 @@ void loop() {
     delay(200);
     digitalWrite(LEDpin,LOW); 
 
-   nextTime = millis() + 180000;
+   nextTime = millis() + 10000;
 }
 
 //Tinker Code
