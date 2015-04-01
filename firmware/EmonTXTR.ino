@@ -15,7 +15,7 @@ int tinkerAnalogWrite(String command);
 */
 unsigned int nextTime =     0;          // Next time to contact the server
 int node_id =               0;
-const float Vcal=           130.0;      //Calibration for US AC-AC adapter
+const float Vcal=           136.5;      //Calibration for my US AC-AC adapter (Nokia 3v charger)
 const int LEDpin =          D7;         // On-board spark core LED
 #define APIKEY "<Your Key Here>"
 
@@ -68,7 +68,7 @@ void loop() {
     }
     
     ct1.calcVI(20,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
-    
+    ct1.Vrms = ct1.Vrms*100;
     // Available properties: ct1.realPower, ct1.apparentPower, ct1.powerFactor, ct1.Irms and ct1.Vrms
 
     //Serial.println();
@@ -93,7 +93,7 @@ void loop() {
     delay(200);
     digitalWrite(LEDpin,LOW); 
 
-   nextTime = millis() + 180000;
+   nextTime = millis() + 10000;
 }
 
 //Tinker Code
