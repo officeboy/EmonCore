@@ -37,20 +37,18 @@ http_header_t headers[] = {
 
 void setup() {
     // Setup indicator LED
-    pinMode(LEDpin, OUTPUT);                                              
-    digitalWrite(LEDpin, HIGH);  
+    pinMode(LEDpin, OUTPUT);
+    digitalWrite(LEDpin, HIGH);
 
     Serial.begin(9600);
-    // Request path and body can be set at runtime or at setup.
-    request.hostname = "emoncms.org";
-    request.port = 80;
-    
+
+
     // (ADC input, calibration, phase_shift)
     ct1.voltage(A0, Vcal, 1.7);  // Voltage: input pin, calibration, phase_shift
-    
+
     // Calibration factor = CT ratio / burden resistance = (100A / 0.05A) / 33 Ohms = 60.606  // (2000 turns / 22 Ohm burden) = 90.9
     ct1.current(A1, 90.9);       // Current: input pin, calibration.
-    
+
 //Tinker Setup
     Spark.function("digitalread", tinkerDigitalRead);
     Spark.function("digitalwrite", tinkerDigitalWrite);
@@ -66,34 +64,42 @@ void loop() {
     if (nextTime > millis()) {
         return;
     }
-    
+
     ct1.calcVI(20,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
     ct1.Vrms = ct1.Vrms*100;
     // Available properties: ct1.realPower, ct1.apparentPower, ct1.powerFactor, ct1.Irms and ct1.Vrms
 
-    //Serial.println();
-    //Serial.println("Application>\tStart of Loop.");
-
-    request.path = "/input/post.json?apikey="APIKEY"&json={ct1Vrms:"+String(ct1.Vrms)+",ct1Irms:"+String(ct1.Irms)+",ct1realpower:"+String(ct1.realPower)+"}";
-
-    // The library also supports sending a body with your request:
-    //request.body = "{\"key\":\"value\"}";
-    
-    // Get request
-    http.get(request, response, headers);
-    
-    //Monitoring Options
-    //Serial.print("Application>\tResponse status: ");
-    //Serial.println(response.status);
-
-    //Serial.print("Application>\tHTTP Response Body: ");
-    //Serial.println(response.body);
-
-    digitalWrite(LEDpin,HIGH); 
-    delay(200);
-    digitalWrite(LEDpin,LOW); 
+    send_data();    //Send data off to web
 
    nextTime = millis() + 10000;
+}
+
+
+void send_data()
+{
+  //Serial.println();
+  //Serial.println("Application>\tStart of Loop.");
+  // Request path and body can be set at runtime or at setup.
+  request.hostname = "emoncms.org";
+  request.port = 80;
+  request.path = "/input/post.json?apikey="APIKEY"&json={ct1Vrms:"+String(ct1.Vrms)+",ct1Irms:"+String(ct1.Irms)+",ct1realpower:"+String(ct1.realPower)+"}";
+
+  // The library also supports sending a body with your request:
+  //request.body = "{\"key\":\"value\"}";
+
+  // Get request
+  http.get(request, response, headers);
+
+  //Monitoring Options
+  //Serial.print("Application>\tResponse status: ");
+  //Serial.println(response.status);
+
+  //Serial.print("Application>\tHTTP Response Body: ");
+  //Serial.println(response.body);
+
+  digitalWrite(LEDpin,HIGH);
+  delay(200);
+  digitalWrite(LEDpin,LOW);
 }
 
 //Tinker Code
