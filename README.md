@@ -1,7 +1,7 @@
 # EmonCore
 Open Energy Monitor - All in One for the Spark Core/Photon
 
-Based on work done in the [emonBase/NanodeRF](http://openenergymonitor.org/emon/emonBase/NanodeRF) project.
+Based on work done in the [emonBase/NanodeRF](http://openenergymonitor.org/emon/emonBase/NanodeRF) project, Cinezaster porting [EmonLib](https://github.com/Cinezaster/EmonLib), and Nils Mattisson's [HttpClient](https://github.com/nmattisson/HttpClient) Library
 
 This project aims in the same single unit direction as emonPi but sticks with arduino type programing and aims for a smaller form factor. 
 
