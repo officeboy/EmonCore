@@ -1,4 +1,3 @@
-
 // This #include statement was automatically added by the Spark IDE.
 #include "EmonLib/EmonLib.h"             // Include Emon Library
 #include "HttpClient/HttpClient.h"
@@ -18,11 +17,12 @@ int node_id =               0;
 const float Vcal=           136.5;      //Calibration for my US AC-AC adapter (Nokia 3v charger)
 const int LEDpin =          D7;         // On-board spark core LED
 #define APIKEY "<Your Key Here>"
+//String rssi = 0;
 
 HttpClient http;
 http_request_t request;
 http_response_t response;
-EnergyMonitor ct1;             // Create an instance for each channel
+EnergyMonitor ct1, ct2, ct3, ct4, ct5, ct6;             // Create an instance for each channel
 
 
 
@@ -45,9 +45,20 @@ void setup() {
 
     // (ADC input, calibration, phase_shift)
     ct1.voltage(A0, Vcal, 1.7);  // Voltage: input pin, calibration, phase_shift
-
+    ct2.voltage(A0, Vcal, 1.7);
+    ct3.voltage(A0, Vcal, 1.7);
+    ct4.voltage(A0, Vcal, 1.7);
+    ct5.voltage(A0, Vcal, 1.7);
+    ct6.voltage(A0, Vcal, 1.7);
+    
     // Calibration factor = CT ratio / burden resistance = (100A / 0.05A) / 33 Ohms = 60.606  // (2000 turns / 22 Ohm burden) = 90.9
     ct1.current(A1, 90.9);       // Current: input pin, calibration.
+    ct2.current(A2, 90.9);
+    ct3.current(A3, 90.9);
+    ct4.current(A4, 90.9);
+    ct5.current(A5, 90.9);
+    ct6.current(A6, 90.9);
+    
 
 //Tinker Setup
     Spark.function("digitalread", tinkerDigitalRead);
@@ -65,10 +76,12 @@ void loop() {
         return;
     }
 
+    // Available properties: ct1.realPower, ct1.apparentPower, ct1.powerFactor, ct1.Irms and ct1.Vrms
     ct1.calcVI(20,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
     ct1.Vrms = ct1.Vrms*100;
-    // Available properties: ct1.realPower, ct1.apparentPower, ct1.powerFactor, ct1.Irms and ct1.Vrms
-
+    
+    //Send WiFi Signal Strength 
+    //String rssi = String(WiFi.RSSI(), DEC);   (rssi:"+String(rssi)+",)  //Needs testing, system locking up. 
     send_data();    //Send data off to web
 
    nextTime = millis() + 10000;
