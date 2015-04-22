@@ -140,46 +140,39 @@ void send_data()
 
 void update_display()
 
-/*
-char str[80];
-    strcpy (str," Variable=");
-    strcat (str,charVAR);
-    strcat (str," !");
-    glcd->PrintLine("");
-    glcd->PrintLine("");
-    glcd->PrintLine(str);   //"Usage:"+charVAR+" Watts");
-*/
-
 {
 char str[80];
   String(ct1.Vrms).toCharArray(charV, 3); // Convert string to char for display output.
+  String(ct1.realPower).toCharArray(charCt1, 5); // ct1 watts
+  String(ct2.realPower).toCharArray(charCt2, 5); // ct2 watts
+  String(ct3.realPower).toCharArray(charCt3, 4); // ct3 watts
+  String(ct4.realPower).toCharArray(charCt4, 4); // ct4 watts
   strcpy (str," V=");
   strcat (str,charV);
   strcat (str,"; ");
-  String(ct1.realPower).toCharArray(charCt1, 3); // ct1 watts
-  strcpy (str," ct1=");
+  
+  strcat (str," ct1=");
   strcat (str,charV);
   strcat (str,"w;");
-  String(ct2.realPower).toCharArray(charCt2, 3); // ct2 watts
-  strcpy (str," ct2=");
-  strcat (str,charV);
-  strcat (str,"w; ");
-  String(ct3.realPower).toCharArray(charCt3, 3); // ct3 watts
-  strcpy (str," Ct3=");
-  strcat (str,charV);
-  strcat (str,"w; ");
-  String(ct4.realPower).toCharArray(charCt4, 3); // ct3 watts
-  strcpy (str," Ct4=");
+  
+  strcat (str," ct2=");
   strcat (str,charV);
   strcat (str,"w; ");
   
+  strcat (str," Ct3=");
+  strcat (str,charV);
+  strcat (str,"w; ");
+  
+  strcat (str," Ct4=");
+  strcat (str,charV);
+  strcat (str,"w; ");
 
-  //glcd->ClearScreen();
   glcd->PrintLine("");
   glcd->PrintLine(str);   //prints the string we have been building
   //glcd->DrawRectangle(2, 12, 114, 26, 1); // draw a box around the text
   //glcd->Show();
 }
+
 //Tinker Code
 /***************
 int tinkerDigitalRead(String pin) {
