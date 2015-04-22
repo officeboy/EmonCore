@@ -1,13 +1,17 @@
 // This #include statement was automatically added by the Spark IDE.
+#include "sh1106/sh1106.h"  //Display library
+
 #include "EmonLib/EmonLib.h"             // Include Emon Library
 #include "HttpClient/HttpClient.h"
 #include "application.h"
 
 //Tinker Variable
+/********** Tinker ***********************
 int tinkerDigitalRead(String pin);
 int tinkerDigitalWrite(String command);
 int tinkerAnalogRead(String pin);
 int tinkerAnalogWrite(String command);
+*****************************************/
 
 /**
 * Declaring the variables.
@@ -16,13 +20,19 @@ unsigned int nextTime =     0;          // Next time to contact the server
 int node_id =               0;
 const float Vcal=           136.5;      //Calibration for my US AC-AC adapter (Nokia 3v charger)
 const int LEDpin =          D7;         // On-board spark core LED
-#define APIKEY "<Your Key Here>"
+#define APIKEY <Your Key Here>"
 //String rssi = 0;
 
 HttpClient http;
 http_request_t request;
 http_response_t response;
 EnergyMonitor ct1, ct2, ct3, ct4, ct5, ct6;             // Create an instance for each channel
+
+volatile boolean g_writeValue = false;
+volatile int g_displayValue = 0;
+
+sh1106_lcd *glcd = NULL;
+char charV[10], charCt1[10], charCt2[10], charCt3[10],charCt4[10];
 
 
 
@@ -41,6 +51,13 @@ void setup() {
     digitalWrite(LEDpin, HIGH);
 
     Serial.begin(9600);
+    
+  glcd = sh1106_lcd::getInstance();
+
+  if (glcd != NULL)
+  {
+    glcd->ClearScreen();
+  }
 
 
     // (ADC input, calibration, phase_shift)
@@ -48,24 +65,27 @@ void setup() {
     ct2.voltage(A0, Vcal, 1.7);
     ct3.voltage(A0, Vcal, 1.7);
     ct4.voltage(A0, Vcal, 1.7);
-    ct5.voltage(A0, Vcal, 1.7);
-    ct6.voltage(A0, Vcal, 1.7);
+    //ct5.voltage(A0, Vcal, 1.7);
+    //ct6.voltage(A0, Vcal, 1.7);
+    //ct7.voltage(A0, Vcal, 1.7);
     
     // Calibration factor = CT ratio / burden resistance = (100A / 0.05A) / 33 Ohms = 60.606  // (2000 turns / 22 Ohm burden) = 90.9
-    ct1.current(A1, 90.9);       // Current: input pin, calibration.
-    ct2.current(A2, 90.9);
-    ct3.current(A3, 90.9);
-    ct4.current(A4, 90.9);
-    ct5.current(A5, 90.9);
-    ct6.current(A6, 90.9);
+    ct1.current(A1, 187.5);  //32omh - sct-019     Current: input pin, calibration. 
+    ct2.current(A2, 187.5);  //32ohms - sct-019
+    ct3.current(A3, 40);  //50ohm - sct-013
+    ct4.current(A4, 40);  //50ohm - sct-013
+    //ct5.current(A5, 90.9);
+    //ct6.current(A6, 90.9);
+    //ct7.current(A7, 90.9);
     
 
-//Tinker Setup
+/**Tinker Setup
     Spark.function("digitalread", tinkerDigitalRead);
     Spark.function("digitalwrite", tinkerDigitalWrite);
     Spark.function("analogread", tinkerAnalogRead);
     Spark.function("analogwrite", tinkerAnalogWrite);
-
+******tinker end*******/
+   
     delay(1000);
     digitalWrite(LEDpin,LOW);
 
@@ -77,13 +97,16 @@ void loop() {
     }
 
     // Available properties: ct1.realPower, ct1.apparentPower, ct1.powerFactor, ct1.Irms and ct1.Vrms
-    ct1.calcVI(20,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
+    ct1.calcVI(30,2000);         // Calculate all. No.of half wavelengths (crossings), time-out
+    ct2.calcVI(30,2000);
+    ct3.calcVI(30,2000);
+    ct4.calcVI(30,2000);
     ct1.Vrms = ct1.Vrms*100;
     
     //Send WiFi Signal Strength 
     //String rssi = String(WiFi.RSSI(), DEC);   (rssi:"+String(rssi)+",)  //Needs testing, system locking up. 
     send_data();    //Send data off to web
-
+    update_display();
    nextTime = millis() + 10000;
 }
 
@@ -95,7 +118,7 @@ void send_data()
   // Request path and body can be set at runtime or at setup.
   request.hostname = "emoncms.org";
   request.port = 80;
-  request.path = "/input/post.json?apikey="APIKEY"&json={ct1Vrms:"+String(ct1.Vrms)+",ct1Irms:"+String(ct1.Irms)+",ct1realpower:"+String(ct1.realPower)+"}";
+  request.path = "/input/post.json?apikey="APIKEY"&json={Vrms:"+String(ct1.Vrms)+",ct1realpower:"+String(ct1.realPower)+",ct2realpower:"+String(ct2.realPower)+",ct3realpower:"+String(ct3.realPower)+",ct4realpower:"+String(ct4.realPower)+"}";
 
   // The library also supports sending a body with your request:
   //request.body = "{\"key\":\"value\"}";
@@ -115,8 +138,50 @@ void send_data()
   digitalWrite(LEDpin,LOW);
 }
 
-//Tinker Code
+void update_display()
 
+/*
+char str[80];
+    strcpy (str," Variable=");
+    strcat (str,charVAR);
+    strcat (str," !");
+    glcd->PrintLine("");
+    glcd->PrintLine("");
+    glcd->PrintLine(str);   //"Usage:"+charVAR+" Watts");
+*/
+
+{
+char str[80];
+  String(ct1.Vrms).toCharArray(charV, 3); // Convert string to char for display output.
+  strcpy (str," V=");
+  strcat (str,charV);
+  strcat (str,"; ");
+  String(ct1.realPower).toCharArray(charCt1, 3); // ct1 watts
+  strcpy (str," ct1=");
+  strcat (str,charV);
+  strcat (str,"w;");
+  String(ct2.realPower).toCharArray(charCt2, 3); // ct2 watts
+  strcpy (str," ct2=");
+  strcat (str,charV);
+  strcat (str,"w; ");
+  String(ct3.realPower).toCharArray(charCt3, 3); // ct3 watts
+  strcpy (str," Ct3=");
+  strcat (str,charV);
+  strcat (str,"w; ");
+  String(ct4.realPower).toCharArray(charCt4, 3); // ct3 watts
+  strcpy (str," Ct4=");
+  strcat (str,charV);
+  strcat (str,"w; ");
+  
+
+  //glcd->ClearScreen();
+  glcd->PrintLine("");
+  glcd->PrintLine(str);   //prints the string we have been building
+  //glcd->DrawRectangle(2, 12, 114, 26, 1); // draw a box around the text
+  //glcd->Show();
+}
+//Tinker Code
+/***************
 int tinkerDigitalRead(String pin) {
     int pinNumber = pin.charAt(1) - '0';
     if (pinNumber< 0 || pinNumber >7) return -1;
@@ -169,3 +234,4 @@ int tinkerAnalogWrite(String command){
         analogWrite(pinNumber+10, value.toInt());
         return 1;}
     else return -2;}
+******End Tinker*************************************/
